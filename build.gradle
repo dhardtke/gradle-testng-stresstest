@@ -1,0 +1,50 @@
+apply plugin: "idea"
+apply plugin: "java"
+
+// copied from https://stackoverflow.com/a/41650455
+class StressTest extends Test {
+    int times = 5
+
+    FileTree getCandidateClassFiles() {
+        // TODO This does not work for TestNG tests :(
+        FileTree candidates = super.getCandidateClassFiles()
+        for (int i = 1; i < times; i++) {
+            candidates = candidates + super.getCandidateClassFiles()
+        }
+        return candidates
+    }
+}
+
+tasks.withType(Test) {
+    // show standard out and standard error of the test JVM(s) on the console
+    testLogging.showStandardStreams = true
+
+    // show full Exceptions when tests fail
+    testLogging {
+        exceptionFormat = "full"
+    }
+}
+
+task stressTestJUnit(type: StressTest) {
+    // write to the same files as the regular test task
+    stressTestJUnit.reports.html.setDestination(new File("$buildDir/reports/tests"))
+    stressTestJUnit.reports.junitXml.setDestination(new File("$buildDir/test-results/test"))
+    stressTestJUnit.binResultsDir = new File("$buildDir/test-results/test/binary")
+}
+
+task stressTestTestNG(type: StressTest) {
+    useTestNG()
+
+    // write to the same files as the regular test task
+    stressTestTestNG.reports.html.setDestination(new File("$buildDir/reports/tests"))
+    stressTestTestNG.reports.junitXml.setDestination(new File("$buildDir/test-results/test"))
+    stressTestTestNG.binResultsDir = new File("$buildDir/test-results/test/binary")
+}
+
+repositories {
+    jcenter()
+}
+
+dependencies {
+    compile "junit:junit:4.12+", "org.testng:testng:6.12+"
+}
